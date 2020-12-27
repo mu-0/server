@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>stream</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+</head>
+<body>
+<h2 id="scratch">scratch</h2>
+<p>RTMP server?</p>
+<h2 id="ffmpeg-notes">ffmpeg notes</h2>
+<p>taken on debian 9 (‘gdeb’)</p>
+<p><code>sudo apt install ffmpeg</code></p>
+<p>“Anything found on the command line which cannot be interpreted as an option is considered to be an output url.”</p>
+<h2 id="steps-on-rpi-a">steps on rpi-a</h2>
+<p>installed <code>mpg123</code> via apt</p>
+<p>transferred image.png from gdeb using:</p>
+<pre><code>scp image.png pi@raspberrypi-alpha.local:</code></pre>
+<p>note that sound.mp3 is already present on rpi-a.</p>
+<p>didn’t help: increasing GPU memory, increasing file space via raspi-config,</p>
+<h3 id="recap-2020-04-03">recap 2020-04-03</h3>
+<p>determined a functional ffmpeg line, but streaming from the rpi is problematic. frames never rises above 5, speed gets stuck at around 0.2-0.3x, and audio comes through in tiny slivers if at all. May have better luck with a converter other than ffmpeg, such as avconv.</p>
+<ul>
+<li>https://www.hackster.io/tinkernut/raspberry-pi-twitch-o-matic-190a15</li>
+<li>https://trac.ffmpeg.org/wiki/StreamingGuide</li>
+<li>https://stackoverflow.com/questions/25891342/creating-a-video-from-a-single-image-for-a-specific-duration-in-ffmpeg</li>
+<li>https://www.reddit.com/r/linux_gaming/comments/dgyy3a/my_ffmpeg_streaming_script/</li>
+<li>https://wiki.archlinux.org/index.php/Streaming_to_twitch.tv</li>
+</ul>
+<p>To create a virtual pa sink:</p>
+<pre><code>pacmd load-module module-null-sink sink_name=StreamSink
+pacmd update-sink-proplist StreamSink device.description=StreamSink
+pacmd list-sources</code></pre>
+<p>From list-sources, I can see the index of StreamSink is 2. So now I run the following to start streaming:</p>
+<pre><code>ffmpeg -f x11grab -s 1920x1080 -r 30 -i :0.0 -f pulse -i 2 -f flv -vcodec libx264 -b:v 1000k -pix_fmt yuv420p -acodec aac &quot;rtmp://live-sjc.twitch.tv/app/$SKEY&quot;</code></pre>
+<p>In pavucontrol, I set the playback on rhythmbox to StreamSink. This causes it to not be heard via the speakers.</p>
+</body>
+</html>

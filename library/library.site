@@ -1,0 +1,21 @@
+server {
+	
+	listen 17776 default_server;
+	location / {
+		root /home/gray/doc;
+		index none;
+		autoindex on;
+	}
+
+}
+
+server {
+	
+	listen 17777 default_server;
+	location / {
+		root /home/gray/media;
+		index none;
+		autoindex on;
+	}
+
+}

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>motorcontrol</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+</head>
+<body>
+<h1 id="custom-motor-controller-project">custom motor controller project</h1>
+<p>specs:</p>
+<p>30V/10A max (due to available power supply)</p>
+<h2 id="parts-to-spec">parts to spec</h2>
+<ul>
+<li>microcontroller &amp; usb interface</li>
+</ul>
+<p>STM32F042C4T6 seems pretty good. available: <a href="https://www.digikey.com/short/z1jqnp">digikey</a> it really is LQFP, ignore the image.</p>
+<p>On second thought: STM32F042K6T6, 32LQFP, fewer pins to waste. <a href="https://www.digikey.com/short/z1jj8q">dk</a></p>
+<ul>
+<li>gate drivers</li>
+</ul>
+<p>STM L6498D: <a href="https://www.digikey.com/short/z1jq1r">digikey</a>
+These are pretty neat. Vcc 10 to 20V; Vinh &lt; 3V3; maximum Vout 480 (600 transient). Not sure how reasonable that is in the package size but it’s cool. Would limit Vout to Vcc unless I want multiple supply inputs… linear regulator?</p>
+<ul>
+<li>lin reg</li>
+</ul>
+<p>L78M12CV for gate driver 12V supply. <a href="https://www.digikey.com/short/z1j83q">digikey</a></p>
+<p>LF33ABV-DG for uC, powered off 12V bus. Brilliant. <a href="https://www.digikey.com/short/z1j83n">digikey</a></p>
+<ul>
+<li>FETs</li>
+</ul>
+<p>STP16NF06L they are for motor control, datasheet says so! <a href="https://www.digikey.com/short/z1j8qm">dk</a></p>
+<ul>
+<li>Current sense</li>
+</ul>
+<p>AD8418: bidirectional, works at 3v3. fixed gain of 20V/V, meaning rsense controls transimpedance.</p>
+<h3 id="stm32f042-board-design-notes">STM32F042 Board Design Notes</h3>
+<ul>
+<li>Vdd = Vdda = Vddio2 = Vbat = 3v3, should be ok to consolidate to one rail</li>
+<li>Vdd: 4.7uF + (100nF each)</li>
+<li>Vddio2: 4.7uF + 100nF</li>
+<li>Vdda: 1uF + 10nF, recommended “external filtering” from Vdd. If separate rail, use schottky for sequencing</li>
+<li><p>Vbat: recommends tying to Vdd if no battery</p></li>
+<li>NRST appears to have internal pullup</li>
+<li><p>watch out for BOOT0 pin</p></li>
+</ul>
+<p>serial wire debug (SWD)
+- SWDIO on PA13 (default int pullup)
+- SWCLK on PA14 (default int pulldown)
+- SWD header pinout: 1 = Vddio2, 2 = SWDIO, 3/5/9 = gnd, 4 = SWCLK, 10 = NRST</p>
+<ul>
+<li>Unused clocks/counters should be frozen or disabled. Unused IO should be driven to 0 or set as outputs.</li>
+</ul>
+<p><img src="r/adc.png" /></p>
+<h3 id="gate-driver-notes">gate driver notes</h3>
+<ul>
+<li>Cvcc: how about 1uF</li>
+<li>Rfilt, Cfilt into inputs: Rfilt &lt;&lt; 75k</li>
+<li>Cboot: Cboot &gt;&gt; Qgate/Vgate. Think I’ll start with 1uF and workshop it</li>
+<li>Rg: how about 0 to start with</li>
+</ul>
+<h2 id="design-questions">design questions</h2>
+<ul>
+<li>how to spec capacitance &amp; capacitors?</li>
+</ul>
+<p>An ideal power supply would not require any bulk capacitance. The bulk capacitance offsets inductive drop at moments of high dI/dt… note that, on average, the capacitors supply zero power.</p>
+<p>Suppose I use a small number of, say, 22uF low ESR electrolytics near the current path. That should be plenty.</p>
+<ul>
+<li>how to do automatic precharging?</li>
+</ul>
+<p>I can skip for now. Just keep bulk capacitance small, it’s ok.</p>
+<h2 id="notes">notes</h2>
+<p>DRV8306 by TI exists as a standalone 3-phase motor driver. Expects a PWM input from the microcontroller. Basically implements all the logic and calculations internally as a standalone device. Seems to be designed for such applications, but too encapsulated for good learning.</p>
+<p>For the next rev: parallel vdd/gnd/A/B/C lines, fets in lines parallel with traces (high side switches near vdd, low sides near gnd). holes in board connect outputs to FETs. basically manhattan routing thick traces. i guess low current traces could stay on bottom… would probably look pretty good. obviously not worth optimizing too much when non-pcb current paths are the high-current inevitability.</p>
+<h2 id="software-setup">software setup</h2>
+<ul>
+<li>downloading stm32cubemx (discrete from stm32cubeide, seems to only contain configuration tools)</li>
+<li>requires JRE: <code>sudo apt install openjdk-8-jre</code></li>
+<li>usb and can are mutually exclusive haah</li>
+<li>PA12 = usb+, PA11 = usb-</li>
+</ul>
+<h2 id="kicad-todo">kicad todo</h2>
+<ul>
+<li>how to do rooms/reproduce layout?</li>
+<li>adjust trace angle while routing (i.e. spacebar in altium)</li>
+<li>hide airwires met by unfilled pour</li>
+<li>switch layer hotkey: it’s <code>\</code> for some reason</li>
+<li>multiroute</li>
+</ul>
+</body>
+</html>

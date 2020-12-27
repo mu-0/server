@@ -1,0 +1,19 @@
+# example default nginx site
+
+server {
+	listen 12345 default_server;
+	listen 80 default_server;
+	
+	auth_basic "go away";
+	auth_basic_user_file /etc/nginx/.htpasswd;
+
+	location / { 
+		proxy_pass http://localhost:17776/;
+	}
+
+	location /library/ { 
+		proxy_pass http://localhost:17776/;
+	}
+
+}
+
